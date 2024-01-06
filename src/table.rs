@@ -139,6 +139,13 @@ impl<R: TableRow> Table<R> {
 }
 impl<R> Table<R> {
     #[must_use]
+    pub fn new() -> Self {
+        Self {
+            rows: Arc::new(RwLock::new(HopSlotMap::with_key())),
+        }
+    }
+
+    #[must_use]
     pub fn insert(&self, row: R) -> RowKey {
         let mut map = self.rows.write().unwrap();
         map.insert(row)
@@ -162,6 +169,11 @@ impl<R> Table<R> {
     pub fn remove(&self, key: RowKey) -> Option<R> {
         let mut map = self.rows.write().unwrap();
         map.remove(key)
+    }
+}
+impl<R> Default for Table<R> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 impl<R> Clone for Table<R> {
