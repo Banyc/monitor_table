@@ -31,35 +31,35 @@ impl<R: TableRow> Table<R> {
         }
 
         let mut series = vec![];
-        for ((title, ty), column) in schema.iter().zip(columns.into_iter()) {
+        for ((header, ty), column) in schema.iter().zip(columns.into_iter()) {
             let s = match ty {
                 LiteralType::String => {
                     let column: Vec<Option<String>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(title, column)
+                    Series::new(header, column)
                 }
                 LiteralType::Int => {
                     let column: Vec<Option<i64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(title, column)
+                    Series::new(header, column)
                 }
                 LiteralType::Float => {
                     let column: Vec<Option<f64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(title, column)
+                    Series::new(header, column)
                 }
                 LiteralType::Bool => {
                     let column: Vec<Option<bool>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(title, column)
+                    Series::new(header, column)
                 }
             };
             series.push(s);
@@ -70,7 +70,7 @@ impl<R: TableRow> Table<R> {
         let df = df.collect().ok()?;
 
         let series = df.get_columns();
-        let titles: Arc<[Arc<str>]> = series.iter().map(|s| s.name().into()).collect();
+        let headers: Vec<String> = series.iter().map(|s| s.name().into()).collect();
         let mut columns = vec![];
         for s in series.iter() {
             let t = s.dtype();
@@ -125,14 +125,16 @@ impl<R: TableRow> Table<R> {
                     .into_iter()
                     .enumerate()
                     .map(|(i, c)| {
-                        let title = &titles[i];
-                        let c: Arc<str> = R::display(title, c).into();
+                        let header = &headers[i];
+                        let c: Arc<str> = R::display_value(header, c).into();
                         c
                     })
                     .collect();
                 r
             })
             .collect();
+
+        let titles = headers.iter().map(|t| R::display_title(t).into()).collect();
 
         TableView::new(titles, rows)
     }

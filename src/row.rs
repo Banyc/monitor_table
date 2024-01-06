@@ -1,10 +1,17 @@
 use core::fmt;
 
 pub trait TableRow {
+    /// Return all the header and the value type.
     fn schema() -> Vec<(String, LiteralType)>;
+    /// Return all of the values corresponding to the schema.
     fn fields(&self) -> Vec<Option<LiteralValue>>;
-    fn display(title: &str, value: Option<LiteralValue>) -> String {
-        let _title = title;
+    /// Convert the header to a user-friendly title.
+    fn display_title(header: &str) -> String {
+        header.to_string()
+    }
+    /// Convert the value to a user-friendly one.
+    fn display_value(header: &str, value: Option<LiteralValue>) -> String {
+        let _ = header;
         match value {
             Some(v) => v.to_string(),
             None => String::new(),
