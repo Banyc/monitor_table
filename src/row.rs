@@ -2,7 +2,7 @@ use core::fmt;
 
 pub trait TableRow {
     fn schema() -> Vec<(String, LiteralType)>;
-    fn field(&self, i: usize) -> Option<LiteralValue>;
+    fn fields(&self) -> Vec<Option<LiteralValue>>;
     fn display(title: &str, value: Option<LiteralValue>) -> String {
         let _title = title;
         match value {

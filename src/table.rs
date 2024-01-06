@@ -25,8 +25,7 @@ impl<R: TableRow> Table<R> {
         let mut columns: Vec<Vec<Option<LiteralValue>>> =
             std::iter::repeat(vec![]).take(schema.len()).collect();
         for (_k, r) in rows.iter() {
-            for (i, (_title, _ty)) in schema.iter().enumerate() {
-                let cell = r.field(i);
+            for (i, cell) in r.fields().into_iter().enumerate() {
                 columns[i].push(cell);
             }
         }
