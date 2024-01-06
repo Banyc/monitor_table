@@ -134,7 +134,7 @@ impl<R: TableRow> Table<R> {
             })
             .collect();
 
-        let titles = headers.iter().map(|t| R::display_title(t).into()).collect();
+        let titles = headers.into_iter().map(|t| t.into()).collect();
 
         TableView::new(titles, rows)
     }

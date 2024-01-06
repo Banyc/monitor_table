@@ -5,10 +5,6 @@ pub trait TableRow {
     fn schema() -> Vec<(String, LiteralType)>;
     /// Return all of the values corresponding to the schema.
     fn fields(&self) -> Vec<Option<LiteralValue>>;
-    /// Convert the header to a user-friendly title.
-    fn display_title(header: &str) -> String {
-        header.to_string()
-    }
     /// Convert the value to a user-friendly one.
     fn display_value(header: &str, value: Option<LiteralValue>) -> String {
         let _ = header;
