@@ -19,12 +19,15 @@ impl<R: TableRow> Table<R> {
         let sql = dfsql::sql::parse(sql)?;
 
         let schema = R::schema();
-        let rows = self.rows.read().unwrap();
+
         let mut columns: Vec<Vec<Option<LiteralValue>>> =
             std::iter::repeat(vec![]).take(schema.len()).collect();
-        for (_k, r) in rows.iter() {
-            for (i, cell) in r.fields().into_iter().enumerate() {
-                columns[i].push(cell);
+        {
+            let rows = self.rows.read().unwrap();
+            for (_k, r) in rows.iter() {
+                for (i, cell) in r.fields().into_iter().enumerate() {
+                    columns[i].push(cell);
+                }
             }
         }
 
