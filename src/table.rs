@@ -1,8 +1,6 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 
+use anyhow::{bail, Context};
 use math::two_dim::VecZip;
 use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::NamedFrom, series::Series};
 use slotmap::{new_key_type, HopSlotMap};
@@ -17,7 +15,7 @@ pub struct Table<R> {
     rows: Arc<RwLock<HopSlotMap<RowKey, R>>>,
 }
 impl<R: TableRow> Table<R> {
-    pub fn to_view(&self, sql: &str) -> Option<TableView> {
+    pub fn to_view(&self, sql: &str) -> anyhow::Result<TableView> {
         let sql = dfsql::sql::parse(sql)?;
 
         let schema = R::schema();
@@ -65,9 +63,10 @@ impl<R: TableRow> Table<R> {
             series.push(s);
         }
         let df = DataFrame::new(series).unwrap();
-
-        let df = dfsql::df::apply(df.lazy(), &sql, &HashMap::new()).ok()?;
-        let df = df.collect().ok()?;
+        let input = [("table".into(), df.lazy())].into_iter().collect();
+        let mut executor = dfsql::df::DfExecutor::new("table".into(), input).unwrap();
+        executor.execute(&sql)?;
+        let df = executor.df().clone().collect()?;
 
         let series = df.get_columns();
         let headers: Vec<String> = series.iter().map(|s| s.name().into()).collect();
@@ -88,12 +87,9 @@ impl<R: TableRow> Table<R> {
                 | polars::datatypes::DataType::Int8
                 | polars::datatypes::DataType::Int16
                 | polars::datatypes::DataType::Int32
-                | polars::datatypes::DataType::Int64 => s
-                    .i64()
-                    .ok()?
-                    .into_iter()
-                    .map(|v| v.map(|v| v.into()))
-                    .collect(),
+                | polars::datatypes::DataType::Int64 => {
+                    s.i64()?.into_iter().map(|v| v.map(|v| v.into())).collect()
+                }
                 polars::datatypes::DataType::Float32 | polars::datatypes::DataType::Float64 => s
                     .f64()
                     .unwrap()
@@ -114,7 +110,9 @@ impl<R: TableRow> Table<R> {
                 | polars::datatypes::DataType::List(_)
                 | polars::datatypes::DataType::Null
                 | polars::datatypes::DataType::Struct(_)
-                | polars::datatypes::DataType::Unknown => return None,
+                | polars::datatypes::DataType::Unknown => {
+                    bail!("Data types other than boolean, integer, and string are unsupported")
+                }
             };
             columns.push(column.into_iter());
         }
@@ -136,7 +134,7 @@ impl<R: TableRow> Table<R> {
 
         let titles = headers.into_iter().map(|t| t.into()).collect();
 
-        TableView::new(titles, rows)
+        TableView::new(titles, rows).context("Failed to build the table view")
     }
 }
 impl<R> Table<R> {
