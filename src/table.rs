@@ -112,7 +112,6 @@ impl<R: TableRow> Table<R> {
                 | polars::datatypes::DataType::Time
                 | polars::datatypes::DataType::List(_)
                 | polars::datatypes::DataType::Null
-                | polars::datatypes::DataType::Struct(_)
                 | polars::datatypes::DataType::Unknown => {
                     bail!("Data types other than boolean, integer, and string are unsupported")
                 }
