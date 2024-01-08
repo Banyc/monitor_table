@@ -267,9 +267,9 @@ dependencies = [
 
 [[package]]
 name = "dfsql"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "156d702f82d2e85386c2b223e50070c2ba28822b75f3f6e62d7045fc6de52684"
+checksum = "0a255841a3a115110bc8dfeb7817662f410f09215892eb5292c6fb4f4c9a48f5"
 dependencies = [
  "chumsky",
  "polars",
