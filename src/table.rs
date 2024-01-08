@@ -44,6 +44,13 @@ impl<R: TableRow> Table<R> {
                         .collect();
                     Series::new(header, column)
                 }
+                LiteralType::UInt => {
+                    let column: Vec<Option<u64>> = column
+                        .into_iter()
+                        .map(|cell| cell.map(|v| v.try_into().unwrap()))
+                        .collect();
+                    Series::new(header, column)
+                }
                 LiteralType::Int => {
                     let column: Vec<Option<i64>> = column
                         .into_iter()
@@ -87,6 +94,7 @@ impl<R: TableRow> Table<R> {
                     .into_iter()
                     .map(|v| v.map(|v| v.into()))
                     .collect(),
+                LiteralType::UInt => s.u64()?.into_iter().map(|v| v.map(|v| v.into())).collect(),
                 LiteralType::Int => s.i64()?.into_iter().map(|v| v.map(|v| v.into())).collect(),
                 LiteralType::Float => s
                     .f64()
@@ -178,8 +186,8 @@ fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> 
         polars::datatypes::DataType::UInt8
         | polars::datatypes::DataType::UInt16
         | polars::datatypes::DataType::UInt32
-        | polars::datatypes::DataType::UInt64
-        | polars::datatypes::DataType::Int8
+        | polars::datatypes::DataType::UInt64 => LiteralType::UInt,
+        polars::datatypes::DataType::Int8
         | polars::datatypes::DataType::Int16
         | polars::datatypes::DataType::Int32
         | polars::datatypes::DataType::Int64 => LiteralType::Int,
@@ -203,6 +211,7 @@ fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> 
 fn alignment(value: LiteralType) -> Alignment {
     match value {
         LiteralType::String => Alignment::Left,
+        LiteralType::UInt => Alignment::Right,
         LiteralType::Int => Alignment::Right,
         LiteralType::Float => Alignment::Right,
         LiteralType::Bool => Alignment::Right,

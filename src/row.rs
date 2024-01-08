@@ -18,6 +18,7 @@ pub trait TableRow {
 #[derive(Debug, Clone, Copy)]
 pub enum LiteralType {
     String,
+    UInt,
     Int,
     Float,
     Bool,
@@ -26,6 +27,7 @@ pub enum LiteralType {
 #[derive(Debug, Clone)]
 pub enum LiteralValue {
     String(String),
+    UInt(u64),
     Int(i64),
     Float(f64),
     Bool(bool),
@@ -35,6 +37,16 @@ impl TryFrom<LiteralValue> for String {
 
     fn try_from(value: LiteralValue) -> Result<Self, Self::Error> {
         let LiteralValue::String(v) = value else {
+            return Err(());
+        };
+        Ok(v)
+    }
+}
+impl TryFrom<LiteralValue> for u64 {
+    type Error = ();
+
+    fn try_from(value: LiteralValue) -> Result<Self, Self::Error> {
+        let LiteralValue::UInt(v) = value else {
             return Err(());
         };
         Ok(v)
@@ -75,6 +87,11 @@ impl From<String> for LiteralValue {
         Self::String(value)
     }
 }
+impl From<u64> for LiteralValue {
+    fn from(value: u64) -> Self {
+        Self::UInt(value)
+    }
+}
 impl From<i64> for LiteralValue {
     fn from(value: i64) -> Self {
         Self::Int(value)
@@ -94,6 +111,7 @@ impl fmt::Display for LiteralValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             LiteralValue::String(v) => write!(f, "{v}"),
+            LiteralValue::UInt(v) => write!(f, "{v}"),
             LiteralValue::Int(v) => write!(f, "{v}"),
             LiteralValue::Float(v) => write!(f, "{v}"),
             LiteralValue::Bool(v) => write!(f, "{v}"),
