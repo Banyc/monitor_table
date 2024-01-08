@@ -94,8 +94,20 @@ impl<R: TableRow> Table<R> {
                     .into_iter()
                     .map(|v| v.map(|v| v.into()))
                     .collect(),
-                LiteralType::UInt => s.u64()?.into_iter().map(|v| v.map(|v| v.into())).collect(),
-                LiteralType::Int => s.i64()?.into_iter().map(|v| v.map(|v| v.into())).collect(),
+                LiteralType::UInt => s
+                    .cast(&polars::datatypes::DataType::UInt64)?
+                    .u64()
+                    .unwrap()
+                    .into_iter()
+                    .map(|v| v.map(|v| v.into()))
+                    .collect(),
+                LiteralType::Int => s
+                    .cast(&polars::datatypes::DataType::Int64)?
+                    .i64()
+                    .unwrap()
+                    .into_iter()
+                    .map(|v| v.map(|v| v.into()))
+                    .collect(),
                 LiteralType::Float => s
                     .f64()
                     .unwrap()
