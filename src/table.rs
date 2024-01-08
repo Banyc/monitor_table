@@ -6,7 +6,10 @@ use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::NamedFrom, series
 use slotmap::{new_key_type, HopSlotMap};
 
 use crate::{
-    protocol::TableView,
+    protocol::{
+        en::{Alignment, TableViewWrite},
+        TableView,
+    },
     row::{LiteralType, LiteralValue, TableRow},
 };
 
@@ -15,7 +18,7 @@ pub struct Table<R> {
     rows: Arc<RwLock<HopSlotMap<RowKey, R>>>,
 }
 impl<R: TableRow> Table<R> {
-    pub fn to_view(&self, sql: &str) -> anyhow::Result<TableView> {
+    pub fn to_view(&self, sql: &str) -> anyhow::Result<TableViewWrite> {
         let sql = dfsql::sql::parse(sql)?;
 
         let schema = R::schema();
@@ -74,49 +77,32 @@ impl<R: TableRow> Table<R> {
         let series = df.get_columns();
         let headers: Vec<String> = series.iter().map(|s| s.name().into()).collect();
         let mut columns = vec![];
+        let mut alignments = vec![];
         for s in series.iter() {
-            let t = s.dtype();
+            let t = literal_type(s.dtype())?;
             let column: Vec<Option<LiteralValue>> = match t {
-                polars::datatypes::DataType::Boolean => s
+                LiteralType::Bool => s
                     .bool()
                     .unwrap()
                     .into_iter()
                     .map(|v| v.map(|v| v.into()))
                     .collect(),
-                polars::datatypes::DataType::UInt8
-                | polars::datatypes::DataType::UInt16
-                | polars::datatypes::DataType::UInt32
-                | polars::datatypes::DataType::UInt64
-                | polars::datatypes::DataType::Int8
-                | polars::datatypes::DataType::Int16
-                | polars::datatypes::DataType::Int32
-                | polars::datatypes::DataType::Int64 => {
-                    s.i64()?.into_iter().map(|v| v.map(|v| v.into())).collect()
-                }
-                polars::datatypes::DataType::Float32 | polars::datatypes::DataType::Float64 => s
+                LiteralType::Int => s.i64()?.into_iter().map(|v| v.map(|v| v.into())).collect(),
+                LiteralType::Float => s
                     .f64()
                     .unwrap()
                     .into_iter()
                     .map(|v| v.map(|v| v.into()))
                     .collect(),
-                polars::datatypes::DataType::String => s
+                LiteralType::String => s
                     .str()
                     .unwrap()
                     .into_iter()
                     .map(|v| v.map(|v| v.to_owned().into()))
                     .collect(),
-                polars::datatypes::DataType::Binary
-                | polars::datatypes::DataType::Date
-                | polars::datatypes::DataType::Datetime(_, _)
-                | polars::datatypes::DataType::Duration(_)
-                | polars::datatypes::DataType::Time
-                | polars::datatypes::DataType::List(_)
-                | polars::datatypes::DataType::Null
-                | polars::datatypes::DataType::Unknown => {
-                    bail!("Data types other than boolean, integer, and string are unsupported")
-                }
             };
             columns.push(column.into_iter());
+            alignments.push(alignment(t));
         }
 
         let rows = VecZip::new(columns)
@@ -133,10 +119,10 @@ impl<R: TableRow> Table<R> {
                 r
             })
             .collect();
-
         let titles = headers.into_iter().map(|t| t.into()).collect();
 
-        TableView::new(titles, rows).context("Failed to build the table view")
+        let t = TableView::new(titles, rows).context("Failed to build the table view")?;
+        Ok(TableViewWrite::new(t, alignments.into()).unwrap())
     }
 }
 impl<R> Table<R> {
@@ -183,6 +169,43 @@ impl<R> Clone for Table<R> {
         Self {
             rows: self.rows.clone(),
         }
+    }
+}
+
+fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> {
+    Ok(match t {
+        polars::datatypes::DataType::Boolean => LiteralType::Bool,
+        polars::datatypes::DataType::UInt8
+        | polars::datatypes::DataType::UInt16
+        | polars::datatypes::DataType::UInt32
+        | polars::datatypes::DataType::UInt64
+        | polars::datatypes::DataType::Int8
+        | polars::datatypes::DataType::Int16
+        | polars::datatypes::DataType::Int32
+        | polars::datatypes::DataType::Int64 => LiteralType::Int,
+        polars::datatypes::DataType::Float32 | polars::datatypes::DataType::Float64 => {
+            LiteralType::Float
+        }
+        polars::datatypes::DataType::String => LiteralType::String,
+        polars::datatypes::DataType::Binary
+        | polars::datatypes::DataType::Date
+        | polars::datatypes::DataType::Datetime(_, _)
+        | polars::datatypes::DataType::Duration(_)
+        | polars::datatypes::DataType::Time
+        | polars::datatypes::DataType::List(_)
+        | polars::datatypes::DataType::Null
+        | polars::datatypes::DataType::Unknown => {
+            bail!("Data types other than boolean, integer, and string are unsupported")
+        }
+    })
+}
+
+fn alignment(value: LiteralType) -> Alignment {
+    match value {
+        LiteralType::String => Alignment::Left,
+        LiteralType::Int => Alignment::Right,
+        LiteralType::Float => Alignment::Right,
+        LiteralType::Bool => Alignment::Right,
     }
 }
 

@@ -43,7 +43,7 @@ impl FromStr for TableView {
                 let mut read = 0;
                 for len in &column_lengths {
                     let cell = chars.clone().skip(read).take(*len).collect::<String>();
-                    let cell = cell.trim_end();
+                    let cell = cell.trim();
                     row.push(cell.into());
                     read += len + 1;
                 }
