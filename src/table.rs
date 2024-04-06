@@ -208,6 +208,7 @@ fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> 
         }
         polars::datatypes::DataType::String => LiteralType::String,
         polars::datatypes::DataType::Binary
+        | polars::datatypes::DataType::BinaryOffset
         | polars::datatypes::DataType::Date
         | polars::datatypes::DataType::Datetime(_, _)
         | polars::datatypes::DataType::Duration(_)
@@ -215,7 +216,7 @@ fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> 
         | polars::datatypes::DataType::List(_)
         | polars::datatypes::DataType::Null
         | polars::datatypes::DataType::Unknown => {
-            bail!("Data types other than boolean, integer, and string are unsupported")
+            bail!("Data types other than boolean, integer, float, or string are unsupported")
         }
     })
 }
