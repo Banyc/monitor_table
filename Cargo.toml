@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dfsql = { version = "0.8", default-features = false }
+dfsql = { version = "0.9", default-features = false }
 polars = { version = "0.39", features = ["lazy"] }
 slotmap = "1"
 math = { git = "https://github.com/Banyc/math.git", tag = "v0.0.1" }
