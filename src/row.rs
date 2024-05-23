@@ -1,5 +1,7 @@
 use core::fmt;
 
+use crate::ArcStr;
+
 pub trait TableRow {
     /// Return all the header and the value type.
     fn schema() -> Vec<(String, LiteralType)>;
@@ -26,13 +28,23 @@ pub enum LiteralType {
 
 #[derive(Debug, Clone)]
 pub enum LiteralValue {
-    String(String),
+    String(ArcStr),
     UInt(u64),
     Int(i64),
     Float(f64),
     Bool(bool),
 }
 impl TryFrom<LiteralValue> for String {
+    type Error = ();
+
+    fn try_from(value: LiteralValue) -> Result<Self, Self::Error> {
+        let LiteralValue::String(v) = value else {
+            return Err(());
+        };
+        Ok(v.to_string())
+    }
+}
+impl TryFrom<LiteralValue> for ArcStr {
     type Error = ();
 
     fn try_from(value: LiteralValue) -> Result<Self, Self::Error> {
@@ -84,6 +96,11 @@ impl TryFrom<LiteralValue> for bool {
 }
 impl From<String> for LiteralValue {
     fn from(value: String) -> Self {
+        Self::String(value.into())
+    }
+}
+impl From<ArcStr> for LiteralValue {
+    fn from(value: ArcStr) -> Self {
         Self::String(value)
     }
 }

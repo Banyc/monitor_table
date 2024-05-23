@@ -1,6 +1,10 @@
+use std::sync::Arc;
+
 pub mod protocol;
 pub mod row;
 pub mod table;
+
+type ArcStr = Arc<str>;
 
 #[cfg(test)]
 mod tests {

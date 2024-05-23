@@ -215,7 +215,7 @@ fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> 
         | polars::datatypes::DataType::Time
         | polars::datatypes::DataType::List(_)
         | polars::datatypes::DataType::Null
-        | polars::datatypes::DataType::Unknown => {
+        | polars::datatypes::DataType::Unknown(_) => {
             bail!("Data types other than boolean, integer, float, or string are unsupported")
         }
     })

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
+use crate::ArcStr;
+
 pub mod de;
 pub mod en;
-
-pub type ArcStr = Arc<str>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TableView {
