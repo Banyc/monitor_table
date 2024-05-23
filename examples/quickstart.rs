@@ -1,5 +1,5 @@
 use monitor_table::{
-    row::{LiteralType, LiteralValue, TableRow},
+    row::{LiteralType, LiteralValue, TableRow, ValueDisplay},
     table::Table,
 };
 
@@ -17,6 +17,7 @@ impl TableRow for Row {
         vec![Some(self.x.into())]
     }
 }
+impl ValueDisplay for Row {}
 
 fn main() {
     let table = Table::new();

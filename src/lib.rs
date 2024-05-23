@@ -1,15 +1,17 @@
 use std::sync::Arc;
 
-pub mod protocol;
+#[cfg(feature = "hdv")]
+mod hdv;
 pub mod row;
 pub mod table;
+pub mod table_view;
 
 type ArcStr = Arc<str>;
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        row::{LiteralType, LiteralValue, TableRow},
+        row::{LiteralType, LiteralValue, TableRow, ValueDisplay},
         table::Table,
     };
 
@@ -29,6 +31,7 @@ mod tests {
                 vec![Some(self.x.into())]
             }
         }
+        impl ValueDisplay for Row {}
 
         let table = Table::new();
 

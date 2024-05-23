@@ -7,6 +7,9 @@ pub trait TableRow {
     fn schema() -> Vec<(String, LiteralType)>;
     /// Return all of the values corresponding to the schema.
     fn fields(&self) -> Vec<Option<LiteralValue>>;
+}
+
+pub trait ValueDisplay {
     /// Convert the value to a user-friendly one.
     fn display_value(header: &str, value: Option<LiteralValue>) -> String {
         let _ = header;

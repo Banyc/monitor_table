@@ -6,18 +6,18 @@ use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::NamedFrom, series
 use slotmap::{new_key_type, HopSlotMap};
 
 use crate::{
-    protocol::{
+    row::{LiteralType, LiteralValue, TableRow, ValueDisplay},
+    table_view::{
         en::{Alignment, TableViewWrite},
         TableView,
     },
-    row::{LiteralType, LiteralValue, TableRow},
 };
 
 #[derive(Debug)]
 pub struct Table<R> {
     rows: Arc<RwLock<HopSlotMap<RowKey, R>>>,
 }
-impl<R: TableRow> Table<R> {
+impl<R: TableRow + ValueDisplay> Table<R> {
     pub fn to_view(&self, sql: &str) -> anyhow::Result<TableViewWrite> {
         let sql = dfsql::sql::parse(sql)?;
 
