@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1"
 dfsql = { version = "0.10", default-features = false }
 hdv = { version = "0.1", optional = true }
-math = { git = "https://github.com/Banyc/math.git", tag = "v0.0.7" }
+math = { git = "https://github.com/Banyc/math.git", tag = "v0.0.8" }
 polars = { version = "0.40", features = ["lazy"] }
 slotmap = "1"
 
