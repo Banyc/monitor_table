@@ -1,8 +1,8 @@
 use std::sync::{Arc, RwLock};
 
 use anyhow::{bail, Context};
-use math::two_dim::VecZip;
 use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::NamedFrom, series::Series};
+use primitive::iter::VecZip;
 use slotmap::{new_key_type, HopSlotMap};
 
 use crate::{
@@ -36,6 +36,7 @@ impl<R: TableRow + ValueDisplay> Table<R> {
 
         let mut series = vec![];
         for ((header, ty), column) in schema.iter().zip(columns.into_iter()) {
+            let header = header.clone().into();
             let s = match ty {
                 LiteralType::String => {
                     let column: Vec<Option<String>> = column
@@ -82,7 +83,7 @@ impl<R: TableRow + ValueDisplay> Table<R> {
         let df = executor.df().clone().collect()?;
 
         let series = df.get_columns();
-        let headers: Vec<String> = series.iter().map(|s| s.name().into()).collect();
+        let headers: Vec<String> = series.iter().map(|s| s.name().to_string()).collect();
         let mut columns = vec![];
         let mut alignments = vec![];
         for s in series.iter() {
