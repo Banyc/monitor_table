@@ -1,7 +1,12 @@
 use std::sync::{Arc, RwLock};
 
 use anyhow::{bail, Context};
-use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::NamedFrom, series::Series};
+use polars::{
+    frame::DataFrame,
+    lazy::frame::IntoLazy,
+    prelude::{Column, NamedFrom},
+    series::Series,
+};
 use primitive::iter::VecZip;
 use slotmap::{new_key_type, HopSlotMap};
 
@@ -43,35 +48,35 @@ impl<R: TableRow + ValueDisplay> Table<R> {
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(header, column)
+                    Column::new(header, column)
                 }
                 LiteralType::UInt => {
                     let column: Vec<Option<u64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(header, column)
+                    Column::new(header, column)
                 }
                 LiteralType::Int => {
                     let column: Vec<Option<i64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(header, column)
+                    Column::new(header, column)
                 }
                 LiteralType::Float => {
                     let column: Vec<Option<f64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(header, column)
+                    Column::new(header, column)
                 }
                 LiteralType::Bool => {
                     let column: Vec<Option<bool>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Series::new(header, column)
+                    Column::new(header, column)
                 }
             };
             series.push(s);
