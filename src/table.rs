@@ -1,13 +1,8 @@
 use std::sync::{Arc, RwLock};
 
 use anyhow::{bail, Context};
-use polars::{
-    frame::DataFrame,
-    lazy::frame::IntoLazy,
-    prelude::{Column, NamedFrom},
-    series::Series,
-};
-use primitive::iter::VecZip;
+use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::Column};
+use primitive::iter::vec_zip::VecZip;
 use slotmap::{new_key_type, HopSlotMap};
 
 use crate::{
