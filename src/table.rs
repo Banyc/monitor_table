@@ -1,15 +1,15 @@
 use std::sync::{Arc, RwLock};
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::Column};
 use primitive::iter::vec_zip::VecZip;
-use slotmap::{new_key_type, HopSlotMap};
+use slotmap::{HopSlotMap, new_key_type};
 
 use crate::{
     row::{LiteralType, LiteralValue, TableRow, ValueDisplay},
     table_view::{
-        en::{Alignment, TableViewWrite},
         TableView,
+        en::{Alignment, TableViewWrite},
     },
 };
 
@@ -203,7 +203,8 @@ fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> 
         polars::datatypes::DataType::Int8
         | polars::datatypes::DataType::Int16
         | polars::datatypes::DataType::Int32
-        | polars::datatypes::DataType::Int64 => LiteralType::Int,
+        | polars::datatypes::DataType::Int64
+        | polars::datatypes::DataType::Int128 => LiteralType::Int,
         polars::datatypes::DataType::Float32 | polars::datatypes::DataType::Float64 => {
             LiteralType::Float
         }
@@ -216,6 +217,9 @@ fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> 
         | polars::datatypes::DataType::Time
         | polars::datatypes::DataType::List(_)
         | polars::datatypes::DataType::Null
+        | polars::datatypes::DataType::Categorical(_, _)
+        | polars::datatypes::DataType::Enum(_, _)
+        | polars::datatypes::DataType::Struct(_)
         | polars::datatypes::DataType::Unknown(_) => {
             bail!("Data types other than boolean, integer, float, or string are unsupported")
         }
