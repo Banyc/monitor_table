@@ -15,6 +15,27 @@ mod tests {
         table::Table,
     };
 
+    /// ref: <https://github.com/pola-rs/polars/issues/22733>
+    #[test]
+    fn test_i128() {
+        struct Row {
+            x: i64,
+        }
+        impl TableRow for Row {
+            fn schema() -> Vec<(String, LiteralType)> {
+                // The table has only one column which stores integers and is called "x"
+                vec![("x".to_string(), LiteralType::Int)]
+            }
+
+            fn fields(&self) -> Vec<Option<LiteralValue>> {
+                // Return values in a row
+                vec![Some(self.x.into())]
+            }
+        }
+        impl ValueDisplay for Row {}
+        let table: Table<Row> = Table::new();
+        table.to_view("filter x = 0").unwrap();
+    }
     #[test]
     fn test_basics() {
         struct Row {

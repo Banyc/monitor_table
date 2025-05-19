@@ -9,7 +9,8 @@ edition = "2024"
 anyhow = "1"
 dfsql = { version = "0.15", default-features = false }
 hdv = { version = "0.7", optional = true }
-polars = { version = "0.47", features = ["lazy", "dtype-categorical"] }
+# "dtype-i128": https://github.com/pola-rs/polars/issues/22733
+polars = { version = "0.47", features = ["lazy", "dtype-categorical", "dtype-i128"] }
 primitive = { git = "https://github.com/Banyc/primitive.git", tag = "v0.0.59" }
 slotmap = "1"
 
