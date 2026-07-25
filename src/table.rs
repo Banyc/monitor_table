@@ -1,9 +1,12 @@
 use std::sync::{Arc, RwLock};
 
-use anyhow::{Context, bail};
-use polars::{frame::DataFrame, lazy::frame::IntoLazy, prelude::Column};
+use anyhow::Context;
+use dfsql::backend::{
+    Frame,
+    dynamic::{Column, Value},
+};
 use primitive::iter::vec_zip::VecZip;
-use slotmap::{HopSlotMap, new_key_type};
+use slotmap::{SlotMap, new_key_type};
 
 use crate::{
     row::{LiteralType, LiteralValue, TableRow, ValueDisplay},
@@ -15,7 +18,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Table<R> {
-    rows: Arc<RwLock<HopSlotMap<RowKey, R>>>,
+    rows: Arc<RwLock<SlotMap<RowKey, R>>>,
 }
 impl<R: TableRow + ValueDisplay> Table<R> {
     pub fn to_view(&self, sql: &str) -> anyhow::Result<TableViewWrite> {
@@ -34,99 +37,78 @@ impl<R: TableRow + ValueDisplay> Table<R> {
             }
         }
 
-        let mut series = vec![];
+        let mut dyn_columns = vec![];
         for ((header, ty), column) in schema.iter().zip(columns.into_iter()) {
-            let header = header.clone().into();
-            let s = match ty {
+            let header = header.clone();
+            let c = match ty {
                 LiteralType::String => {
-                    let column: Vec<Option<String>> = column
+                    let v: Vec<Option<String>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Column::new(header, column)
+                    Column::new(header, v)
                 }
                 LiteralType::UInt => {
-                    let column: Vec<Option<u64>> = column
+                    let v: Vec<Option<u64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Column::new(header, column)
+                    Column::new(header, v)
                 }
                 LiteralType::Int => {
-                    let column: Vec<Option<i64>> = column
+                    let v: Vec<Option<i64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Column::new(header, column)
+                    Column::new(header, v)
                 }
                 LiteralType::Float => {
-                    let column: Vec<Option<f64>> = column
+                    let v: Vec<Option<f64>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Column::new(header, column)
+                    Column::new(header, v)
                 }
                 LiteralType::Bool => {
-                    let column: Vec<Option<bool>> = column
+                    let v: Vec<Option<bool>> = column
                         .into_iter()
                         .map(|cell| cell.map(|v| v.try_into().unwrap()))
                         .collect();
-                    Column::new(header, column)
+                    Column::new(header, v)
                 }
             };
-            series.push(s);
+            dyn_columns.push(c);
         }
-        let df = DataFrame::new(series).unwrap();
-        let input = [("table".into(), df.lazy())].into_iter().collect();
-        let mut executor = dfsql::df::DfExecutor::new("table".into(), input).unwrap();
-        executor.execute(&sql)?;
-        let df = executor.df().clone().collect()?;
 
-        let series = df.get_columns();
-        let headers: Vec<String> = series.iter().map(|s| s.name().to_string()).collect();
-        let mut columns = vec![];
+        let frame = Frame::new(dyn_columns)?;
+        let mut executor = dfsql::Executor::from_frame("table", frame);
+        executor.execute(&sql)?;
+
+        let frame = executor.collect()?;
+        let headers = frame.column_names();
+        let dyn_frame = frame.to_dynamic()?;
+        let mut out_columns = vec![];
         let mut alignments = vec![];
-        for s in series.iter() {
-            let t = literal_type(s.dtype())?;
-            let column: Vec<Option<LiteralValue>> = match t {
-                LiteralType::Bool => s
-                    .bool()
-                    .unwrap()
-                    .into_iter()
-                    .map(|v| v.map(|v| v.into()))
-                    .collect(),
-                LiteralType::UInt => s
-                    .cast(&polars::datatypes::DataType::UInt64)?
-                    .u64()
-                    .unwrap()
-                    .into_iter()
-                    .map(|v| v.map(|v| v.into()))
-                    .collect(),
-                LiteralType::Int => s
-                    .cast(&polars::datatypes::DataType::Int64)?
-                    .i64()
-                    .unwrap()
-                    .into_iter()
-                    .map(|v| v.map(|v| v.into()))
-                    .collect(),
-                LiteralType::Float => s
-                    .f64()
-                    .unwrap()
-                    .into_iter()
-                    .map(|v| v.map(|v| v.into()))
-                    .collect(),
-                LiteralType::String => s
-                    .str()
-                    .unwrap()
-                    .into_iter()
-                    .map(|v| v.map(|v| v.to_owned().into()))
-                    .collect(),
-            };
-            columns.push(column.into_iter());
+        for col in dyn_frame.columns() {
+            let values = col.values();
+            let t = infer_type(&values);
+            let column: Vec<Option<LiteralValue>> = values
+                .into_iter()
+                .map(|v| match v {
+                    Value::Null => None,
+                    Value::Bool(b) => Some(b.into()),
+                    Value::UInt(u) => Some(u.into()),
+                    Value::Int(i) => Some(i.into()),
+                    Value::Float(f) => Some(f.into()),
+                    Value::String(s) => Some(LiteralValue::String(s)),
+                    Value::Bytes(_) | Value::List(_) => None,
+                })
+                .collect();
+            out_columns.push(column.into_iter());
             alignments.push(alignment(t));
         }
 
-        let rows = VecZip::new(columns)
+        let rows = VecZip::new(out_columns)
             .map(|r| {
                 let r: Arc<[Arc<str>]> = r
                     .into_iter()
@@ -150,7 +132,7 @@ impl<R> Table<R> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            rows: Arc::new(RwLock::new(HopSlotMap::with_key())),
+            rows: Arc::new(RwLock::new(SlotMap::with_key())),
         }
     }
 
@@ -193,37 +175,18 @@ impl<R> Clone for Table<R> {
     }
 }
 
-fn literal_type(t: &polars::datatypes::DataType) -> anyhow::Result<LiteralType> {
-    Ok(match t {
-        polars::datatypes::DataType::Boolean => LiteralType::Bool,
-        polars::datatypes::DataType::UInt8
-        | polars::datatypes::DataType::UInt16
-        | polars::datatypes::DataType::UInt32
-        | polars::datatypes::DataType::UInt64 => LiteralType::UInt,
-        polars::datatypes::DataType::Int8
-        | polars::datatypes::DataType::Int16
-        | polars::datatypes::DataType::Int32
-        | polars::datatypes::DataType::Int64
-        | polars::datatypes::DataType::Int128 => LiteralType::Int,
-        polars::datatypes::DataType::Float32 | polars::datatypes::DataType::Float64 => {
-            LiteralType::Float
+fn infer_type(values: &[Value]) -> LiteralType {
+    for v in values {
+        match v {
+            Value::Bool(_) => return LiteralType::Bool,
+            Value::UInt(_) => return LiteralType::UInt,
+            Value::Int(_) => return LiteralType::Int,
+            Value::Float(_) => return LiteralType::Float,
+            Value::String(_) => return LiteralType::String,
+            Value::Bytes(_) | Value::List(_) | Value::Null => continue,
         }
-        polars::datatypes::DataType::String => LiteralType::String,
-        polars::datatypes::DataType::Binary
-        | polars::datatypes::DataType::BinaryOffset
-        | polars::datatypes::DataType::Date
-        | polars::datatypes::DataType::Datetime(_, _)
-        | polars::datatypes::DataType::Duration(_)
-        | polars::datatypes::DataType::Time
-        | polars::datatypes::DataType::List(_)
-        | polars::datatypes::DataType::Null
-        | polars::datatypes::DataType::Categorical(_, _)
-        | polars::datatypes::DataType::Enum(_, _)
-        | polars::datatypes::DataType::Struct(_)
-        | polars::datatypes::DataType::Unknown(_) => {
-            bail!("Data types other than boolean, integer, float, or string are unsupported")
-        }
-    })
+    }
+    LiteralType::String
 }
 
 fn alignment(value: LiteralType) -> Alignment {

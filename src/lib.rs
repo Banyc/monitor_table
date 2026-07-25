@@ -15,7 +15,6 @@ mod tests {
         table::Table,
     };
 
-    /// ref: <https://github.com/pola-rs/polars/issues/22733>
     #[test]
     fn test_i128() {
         struct Row {
