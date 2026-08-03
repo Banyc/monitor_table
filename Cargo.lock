@@ -75,8 +75,8 @@ checksum = "95832e849adfb21180ccb6826a99da14e5d266ae5c2e668e1602cf234f153797"
 
 [[package]]
 name = "dfsql"
-version = "0.16.0"
-source = "git+https://github.com/Banyc/dfsql?tag=v0.16.0#3009182aaeb3f4f209a399fd496a90c6e4beb630"
+version = "0.17.0"
+source = "git+https://github.com/Banyc/dfsql?tag=v0.17.0#dbdeccd99e1a41f95c933bcfc9aadc09ebb8a740"
 dependencies = [
  "regex",
  "thiserror",
