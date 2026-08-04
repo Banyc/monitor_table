@@ -7,7 +7,8 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1"
-dfsql = { git = "https://github.com/Banyc/dfsql", tag = "v0.17.0" }
+# dfsql = { git = "https://github.com/Banyc/dfsql", tag = "v0.17.0" }
+dfsql = { path = "../dfsql" }
 hdv = { version = "0.7", optional = true }
 primitive = { git = "https://github.com/Banyc/primitive.git", tag = "v0.0.59" }
 slotmap = "1"
@@ -15,3 +16,6 @@ slotmap = "1"
 [features]
 default = []
 hdv = ["dep:hdv"]
+
+# [patch."https://github.com/Banyc/dfsql"]
+# dfsql = { path = "../dfsql" }

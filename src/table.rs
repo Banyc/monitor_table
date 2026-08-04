@@ -27,7 +27,7 @@ impl<R: TableRow + ValueDisplay> Table<R> {
         let schema = R::schema();
 
         let mut columns: Vec<Vec<Option<LiteralValue>>> =
-            std::iter::repeat(vec![]).take(schema.len()).collect();
+            std::iter::repeat_n(vec![], schema.len()).collect();
         {
             let rows = self.rows.read().unwrap();
             for (_k, r) in rows.iter() {
@@ -38,7 +38,7 @@ impl<R: TableRow + ValueDisplay> Table<R> {
         }
 
         let mut dyn_columns = vec![];
-        for ((header, ty), column) in schema.iter().zip(columns.into_iter()) {
+        for ((header, ty), column) in schema.iter().zip(columns) {
             let header = header.clone();
             let c = match ty {
                 LiteralType::String => {
@@ -81,7 +81,7 @@ impl<R: TableRow + ValueDisplay> Table<R> {
         }
 
         let frame = Frame::new(dyn_columns)?;
-        let mut executor = dfsql::Executor::from_frame("table", frame);
+        let mut executor = dfsql::backend::DynamicExecutor::from_frame("table", frame);
         executor.execute(&sql)?;
 
         let frame = executor.collect()?;
