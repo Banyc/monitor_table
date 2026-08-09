@@ -16,6 +16,3 @@ slotmap = "1"
 [features]
 default = []
 hdv = ["dep:hdv"]
-
-# [patch."https://github.com/Banyc/dfsql"]
-# dfsql = { path = "../dfsql" }
