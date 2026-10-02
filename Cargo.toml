@@ -10,7 +10,7 @@ anyhow = "1"
 dfsql = { git = "https://github.com/Banyc/dfsql", tag = "v0.18.0" }
 # dfsql = { path = "../dfsql" }
 hdv = { version = "0.7", optional = true }
-primitive = { git = "https://github.com/Banyc/primitive.git", tag = "v0.0.59" }
+primitive = { git = "https://github.com/Banyc/primitive.git", tag = "v0.0.61" }
 slotmap = "1"
 
 [features]
